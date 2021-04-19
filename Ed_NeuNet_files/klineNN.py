@@ -49,28 +49,70 @@ class NeuralNetwork:
 		self.weights = self.weights - (
 			derror_dweights * self.learning_rate
 		)
-		
+	
+	# will calculate the Simple Moving Average of the given data
 	def calculate_SMA(input_candles):
 		length = len(input_candles)
-		# SMA_length = self.SMA_length
+		SMA_length = self.SMA_length
+		
+		startPoint = 0
+		if (length - SMA_length > 0):
+			startPoint = length - SMA_length
+			
 		total = 0
-		for foo in range(length - SMA_length, length):
+		for foo in range(startPoint, length):
 			currentmedian = calculate_median(input_candles[foo])
 			total = total + currentmedian
 		average = total / SMA_length
 		return average
-		
+	
+	# will calculate a 'median' actually just the average between
+	# the opening and closing values of the candlestick
 	def calculate_median(input_candle):
 		total = input_candle[1] + input_candle[2]
 		average = total / 2
 		return average
 		
+	# will calculate the difference between two data points. if given 
+	# more than two, will calculate between the last two in the list
 	def calculate_difference(input_candles):
+		arrayLength = len(input_candles)-1
 		difference = [0,0,0,0]
-		for foo in range(len(input_candles[0])):
-			difference[foo] = input_candles[1][foo] - input_candles[0][foo]
+		if (arrayLength>0):
+			for foo in range(0, len(input_candles[0])-1):
+				difference[foo] = input_candles[arrayLength][foo] - input_candles[arrayLength-1][foo]
 		return difference
+	
+	# will calculate a list of targets for the training function to use
+	def calculate_targets(input_candles):
+		targets = []
+		length = len(input_candles) - 2
+		if (length > 0):
+			for foo in range(1, length+1):
+				difference = calculate_difference([input_candles[foo],input_candles[foo+1]])
+				median = calculate_median(difference)
+				targets.append(median)
+		return targets
 		
+	def read_json(filename):
+		data = []
+		dataFloat = []
+		with open(filename) as f:
+			data = json.load(f)
+		for i in data:
+			dataFloat.append([float(j) for j in i])
+		return dataFloat
+		
+	def transform(vecs):
+		length = len(vecs)-1
+		newVecs = []
+		for foo in range(0, length+1):
+			newVecs.append([float(vecs[foo][1]), float(vecs[foo][2]), float(vecs[foo][3]), float(vecs[foo][4]),  float(vecs[foo][5])])
+		#new_grades = [int(g) for g in newVecs]
+		return newVecs
+		
+	# will analyse to see if the new volume has gone above or below
+	# a given boundary when compared to the previous volume
 	def detect_volume_change(vecs):
 		volume_threshold = self.volume_threshold
 		#volume_threshold = 1.05
@@ -87,6 +129,8 @@ class NeuralNetwork:
 			#within the average threshold
 			return 0
 		
+	# will detect if the new price has gone above or below the 
+	# Simple Moving Average, within a certain boundary
 	def detect_price_change(input_candle, vecs):
 		SMA_threshold = self.SMA_threshold
 		SMA = calculate_SMA(vecs)
