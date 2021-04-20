@@ -103,19 +103,21 @@ class NeuralNetwork:
 			dataFloat.append([float(j) for j in i])
 		return dataFloat
 		
+	def write_json(data, filename):
+		with open(filename, 'w') as outfile:
+			json.dump(data, outfile)
+		
 	def transform(vecs):
 		length = len(vecs)-1
 		newVecs = []
 		for foo in range(0, length+1):
 			newVecs.append([float(vecs[foo][1]), float(vecs[foo][2]), float(vecs[foo][3]), float(vecs[foo][4]),  float(vecs[foo][5])])
-		#new_grades = [int(g) for g in newVecs]
 		return newVecs
 		
 	# will analyse to see if the new volume has gone above or below
 	# a given boundary when compared to the previous volume
 	def detect_volume_change(vecs):
 		volume_threshold = self.volume_threshold
-		#volume_threshold = 1.05
 		length = len(vecs)-1
 		volume1 = vecs[length-1][4]
 		volume2 = vecs[length][4]
