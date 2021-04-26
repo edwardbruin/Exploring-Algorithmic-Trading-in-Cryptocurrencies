@@ -17,8 +17,9 @@ def read_csv(filename):
 def plot_acc(kl, model, kf):
 	pred = model(kf)
 	plt.figure()
-	plt.plot(kl)
-	plt.plot(pred)
+	plt.plot(kl, label='actual')
+	plt.plot(pred, label='predicted')
+	plt.legend()
 	plt.show()
 
 def regular_model(kline_features, kline_labels):
@@ -30,7 +31,7 @@ def regular_model(kline_features, kline_labels):
 	])
 	kline_model.compile(loss = tf.losses.MeanSquaredError(),
 						optimizer = tf.optimizers.Adam())
-	kline_model.fit(kline_features, kline_labels, epochs=epochs)
+	kline_model.fit(kline_features, kline_labels, epochs=epochs, verbose=0)
 	kline_model.evaluate(kline_features, kline_labels, verbose=2)
 	return kline_model
 
@@ -49,7 +50,7 @@ def normalised_model(kline_features, kline_labels):
 	])
 	norm_kline_model.compile(	loss = tf.losses.MeanSquaredError(),
 							  	optimizer = tf.optimizers.Adam())
-	norm_kline_model.fit(kline_features, kline_labels, epochs=epochs)
+	norm_kline_model.fit(kline_features, kline_labels, epochs=epochs, verbose=0)
 	norm_kline_model.evaluate(kline_features, kline_labels, verbose=2)
 	return norm_kline_model
 
