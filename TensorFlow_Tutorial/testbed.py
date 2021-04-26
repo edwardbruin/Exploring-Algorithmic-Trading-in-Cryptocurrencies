@@ -3,7 +3,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
 import pandas as pd
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 def json_to_csv(filename):
 	testjson = pd.read_json(filename)
@@ -13,8 +13,17 @@ def json_to_csv(filename):
 def read_csv(filename):
 	csv_data = pd.read_csv(filename)
 	return csv_data
+	
+def plot_acc(kl, model, kf):
+	pred = model(kf)
+	plt.figure()
+	plt.plot(kl)
+	plt.plot(pred)
+	plt.show()
 
-def regular_model(layer1_neurons, epochs, kline_features, kline_labels):
+def regular_model(kline_features, kline_labels):
+	layer1_neurons = int(input("layer1_neurons: "))
+	epochs = int(input("epochs: "))
 	kline_model = tf.keras.Sequential([
 		layers.Dense(layer1_neurons),
 		layers.Dense(1)
@@ -23,8 +32,11 @@ def regular_model(layer1_neurons, epochs, kline_features, kline_labels):
 						optimizer = tf.optimizers.Adam())
 	kline_model.fit(kline_features, kline_labels, epochs=epochs)
 	kline_model.evaluate(kline_features, kline_labels, verbose=2)
+	return kline_model
 
-def normalised_model(layer1_neurons, epochs, kline_features, kline_labels):
+def normalised_model(kline_features, kline_labels):
+	layer1_neurons = int(input("layer1_neurons: "))
+	epochs = int(input("epochs: "))
 	normalize = preprocessing.Normalization()
 	normalize.adapt(kline_features)
 	normalizel = preprocessing.Normalization()
@@ -39,11 +51,10 @@ def normalised_model(layer1_neurons, epochs, kline_features, kline_labels):
 							  	optimizer = tf.optimizers.Adam())
 	norm_kline_model.fit(kline_features, kline_labels, epochs=epochs)
 	norm_kline_model.evaluate(kline_features, kline_labels, verbose=2)
+	return norm_kline_model
 
 # def process_inputs(norm):	
 def process_inputs():	
-	layer1_neurons = int(input("layer1_neurons"))
-	epochs = int(input("epochs"))
 	header_names = ["Open_time", "Open", "High", "Low", "Close", "Volume", "Close_time", "Quote_asset_volume", "Number_of_trades", "Taker_buy_base_asset_volume", "Taker_buy_quote_asset_volume", "Ignore"]
 	usecols = header_names[1:6] + header_names[7:11]
 	kline_train = pd.read_csv("klinedata.csv", names = header_names, usecols = usecols)
@@ -57,11 +68,6 @@ def process_inputs():
 	kline_features.drop(kline_features.tail(1).index, inplace=True)
 	kline_features = np.array(kline_features)
 	return kline_features, kline_labels
-	# if norm:
-		# model = normalised_model(layer1_neurons, epochs, kline_features, kline_labels)
-	# else:
-		# model = regular_model(layer1_neurons, epochs, kline_features, kline_labels)
-	# return model
 
 class SMA_List:
 	def __init__(self, long, short):
