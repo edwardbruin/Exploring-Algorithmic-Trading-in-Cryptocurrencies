@@ -23,20 +23,32 @@ class BNN:
 		new_offset = input("enter new offset: ")
 		self.offset = new_offset
 	
+	def set_neurons(self):
+		new_neurons = input("enter new neurons: ")
+		self.neurons = new_neurons
+	
+	def set_epochs(self):
+		new_epochs = input("enter new epochs: ")
+		self.epochs = new_epochs
+	
 	def set_invalid(self):
 		print("not a valid selection")
 	
 	def set_variables(self):
 		selection = 0
 		print("1-filename")
-		print("2-labels")
-		print("3-features")
-		print("4-model")
-		print("5-offset")
-		selection = int(input("enter selection: "))
+		print("2-offset")
+		print("3-neurons")
+		print("4-epochs")
+		print("5-labels")
+		print("6-features")
+		print("7-model")
+		selection = int( input("enter selection: ") )
 		switcher = {
 			1: self.set_filename,
-			5: self.set_offset
+			2: self.set_offset,
+			3: self.set_neurons,
+			4: self.set_epochs
 		}
 		switcher.get( selection, self.set_invalid )()
 
