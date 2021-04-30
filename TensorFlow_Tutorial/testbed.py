@@ -8,27 +8,35 @@ import matplotlib.pyplot as plt
 class BNN:
 	def __init__(self):
 		self.filename = 'klinedata.json'
+		self.trainfilename = 'klinedata.json'
+		self.testfilename = 'test.json'
 		self.kl = None
 		self.kf = None
+		self.ktest = None
+		self.ktestlabels = None
 		self.model = None
 		self.offset = 1
 		self.neurons = 128
 		self.epochs = 15
 	
-	def set_filename(self):
-		new_filename = input("enter new json filename: ")
-		self.filename = new_filename
+	def set_trainfilename(self):
+		new_filename = input("enter new training json filename: ")
+		self.trainfilename = new_filename
+	
+	def set_testfilename(self):
+		new_filename = input("enter new testing json filename: ")
+		self.testfilename = new_filename
 	
 	def set_offset(self):
-		new_offset = input("enter new offset: ")
+		new_offset = int(input("enter new offset: "))
 		self.offset = new_offset
 	
 	def set_neurons(self):
-		new_neurons = input("enter new neurons: ")
+		new_neurons = int(input("enter new neurons: "))
 		self.neurons = new_neurons
 	
 	def set_epochs(self):
-		new_epochs = input("enter new epochs: ")
+		new_epochs = int(input("enter new epochs: "))
 		self.epochs = new_epochs
 	
 	def set_invalid(self):
@@ -36,24 +44,23 @@ class BNN:
 	
 	def set_variables(self):
 		selection = 0
-		print("1-filename")
+		print("1-trainfilename")
 		print("2-offset")
 		print("3-neurons")
 		print("4-epochs")
-		print("5-labels")
-		print("6-features")
-		print("7-model")
+		print("5-testfilename")
 		selection = int( input("enter selection: ") )
 		switcher = {
-			1: self.set_filename,
+			1: self.set_trainfilename,
 			2: self.set_offset,
 			3: self.set_neurons,
-			4: self.set_epochs
+			4: self.set_epochs,
+			5: self.set_testfilename
 		}
 		switcher.get( selection, self.set_invalid )()
 
 	def json_to_csv(self):
-		filename = self.filename
+		filename = self.trainfilename
 		testjson = pd.read_json(filename)
 		filename = filename.removesuffix('.json')+'.csv'
 		testjson.to_csv(filename,index=False, header=False)
@@ -62,12 +69,17 @@ class BNN:
 		csv_data = pd.read_csv(filename)
 		return csv_data
 		
+	def evaluate_model(self):
+		foo = self.model.evaluate(self.ktest, self.ktestlabels, verbose=2)
+		return foo
+		
 	def plot_acc(self):
-		kl = self.kl
+		kl = self.ktestlabels
 		model = self.model
-		kf = self.kf
+		kf = self.ktest
 		pred = model(kf)
 		plt.figure()
+		plt.grid()
 		plt.plot(kl, label='actual')
 		plt.plot(pred, label='predicted')
 		plt.legend()
@@ -85,7 +97,7 @@ class BNN:
 		kline_model.compile(loss = tf.losses.MeanSquaredError(),
 							optimizer = tf.optimizers.Adam())
 		kline_model.fit(kline_features, kline_labels, epochs=epochs, verbose=0)
-		kline_model.evaluate(kline_features, kline_labels, verbose=2)
+		#kline_model.evaluate(kline_features, kline_labels, verbose=2)
 		self.model = kline_model
 		# return kline_model
 
@@ -107,7 +119,7 @@ class BNN:
 		norm_kline_model.compile(	loss = tf.losses.MeanSquaredError(),
 									optimizer = tf.optimizers.Adam())
 		norm_kline_model.fit(kline_features, kline_labels, epochs=epochs, verbose=0)
-		norm_kline_model.evaluate(kline_features, kline_labels, verbose=2)
+		#norm_kline_model.evaluate(kline_features, kline_labels, verbose=2)
 		# return norm_kline_model
 
 	# def process_inputs(norm):	
@@ -117,12 +129,18 @@ class BNN:
 		usecols = header_names[1:6] + header_names[7:11]
 		kline_train = pd.read_csv("klinedata.csv", names = header_names, usecols = usecols)
 		training_target = header_names[8]
-
+		
+		kline_test = pd.read_csv("klinedata.csv", names = header_names, usecols = usecols)
+		kline_test_labels = kline_test.Close[offset:]
+		kline_test.drop(kline_test.tail(offset).index, inplace=True)
+		
 		kline_features = kline_train.copy()
 		kline_labels = kline_features.Close[offset:]
 		kline_features.drop(kline_features.tail(offset).index, inplace=True)
 		self.kf = np.array(kline_features)
 		self.kl = np.array(kline_labels)
+		self.ktest = np.array(kline_test)
+		self.ktestlabels = np.array(kline_test_labels)
 		# return self.kf, self.kl
 
 	class SMA_List:
@@ -189,3 +207,36 @@ class BNN:
 				difference = calculate_difference([Close_values[foo],Close_values[foo+1]])
 				targets.append(difference)
 		return targets
+	
+	def loop(self):
+		self.regular_model()
+		return self.evaluate_model()
+		
+def optimize(offset):
+	BNN1 = BNN()
+	BNN2 = BNN()
+	
+	BNN1.offset = offset
+	BNN2.offset = offset
+	
+	BNN1.process_inputs()
+	BNN2.process_inputs()
+	
+	BNN1.regular_model()
+	BNN2.regular_model()
+	
+	for i in range(10):
+		acc1 = BNN1.evaluate_model()
+		acc2 = BNN2.evaluate_model()
+		if (acc1 > acc2):
+			BNN1.regular_model()
+		
+		if (acc2 > acc1):
+			BNN2.regular_model()
+	winner = [acc1, acc2].index(min([acc1, acc2]))
+	print(winner)
+	winnerdict = {
+		0:BNN1,
+		1:BNN2
+	}
+	return winnerdict.get(winner)
